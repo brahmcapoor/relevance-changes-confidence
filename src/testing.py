@@ -1,7 +1,7 @@
-from psychopy import visual, core, event
+from psychopy import visual, core, event, logging
 from random import shuffle
 
-def stimulus_and_mask(win, stimulus, mask_1, mask_2, prompt):
+def stimulus_and_mask(win, stimulus, stim_number, mask_1, mask_2, prompt, dys):
     """
     Shows a single stimulus begind a mask. Params are
     self explanatory
@@ -27,8 +27,29 @@ def stimulus_and_mask(win, stimulus, mask_1, mask_2, prompt):
     prompt.draw()
     win.flip()
 
-    event.waitKeys()
+    if dys:
+        while True:
+            keys = event.getKeys(['y', 'n'])
+            if keys:
+                break
 
+        if keys[0] == 'y':
+            logging.warn("Subject saw {} stimulus".format(stim_number))
+        else:
+            logging.warn("Subject didn't see {} stimulus".format(stim_number))
+
+    else:
+        while True:
+            keys = event.getKeys(['right', 'left'])
+            if keys:
+                break
+
+        if keys[0] == 'right':
+            logging.warn("Subject said {} stimulus was tilted right".format(stim_number))
+        else:
+            logging.warn("Subject said {} stimulus was tilted left".format(stim_number))
+
+    logging.flush()
     win.flip()
 
 def trial(win, stim_1, stim_2, calibrator=False):
@@ -57,9 +78,87 @@ def trial(win, stim_1, stim_2, calibrator=False):
                              alignHoriz = 'center',
                              alignVert = 'center')
 
-    stimulus_and_mask(win, stim_1, mask_1, mask_2, prompt)
-    stimulus_and_mask(win, stim_2, mask_1, mask_2, prompt)
+    last_question = visual.TextStim(win,
+                                    text = "Which were you more confident about?",
+                                    alignHoriz = 'center',
+                                    alignVert = 'center')
 
+    stimulus_and_mask(win, stim_1, "first", mask_1, mask_2, prompt, calibrator)
+    stimulus_and_mask(win, stim_2, "second", mask_1, mask_2, prompt, calibrator)
+
+
+    last_question.draw()
+    win.flip()
+
+    while True:
+        keys = event.getKeys(['1', '2'])
+        if keys:
+            break
+
+    if keys[0] == '1':
+        logging.warn("Subject was more confident about the first stimulus")
+    else:
+        logging.warn("Subject was more confident about the second stimulus")
+
+    logging.flush()
+
+def generate_log(trial_param):
+
+    """
+    Generates the log message for a particular trial.
+    """
+
+    first_stim, \
+    second_stim, \
+    gabor_visibility, \
+    disc_contrast, \
+    gabor_orientation, \
+    dys_trial = trial_param
+
+    gabor_index = ""
+    if isinstance(first_stim, visual.GratingStim):
+        gabor_index = "first"
+    else:
+        gabor_index = "second"
+
+    gabor_visible = ""
+    if not gabor_visibility:
+        gabor_visible = "and invisible"
+
+    gabor_tilt = ""
+    if gabor_orientation > 0:
+        gabor_tilt = "and is tilted right"
+    elif gabor_orientation < 0:
+        gabor_tilt = "and is tilted left"
+
+    trial_check = ""
+    if dys_trial:
+        trial_check = "if stimulus is seen"
+    else:
+        trial_check = "tilt of stimulus"
+
+
+
+    return "Gabor is {} {}{}. Disc contrast is {}. Trial checks {}. ".format(gabor_index,
+                                                                             gabor_visible,
+                                                                             gabor_tilt,
+                                                                             disc_contrast,
+                                                                             trial_check)
+
+def press_to_continue(window):
+
+    prompt = visual.TextStim(window,
+                             text = "Press space to continue",
+                             alignHoriz = 'center',
+                             alignVert = 'center')
+
+    prompt.draw()
+    window.flip()
+
+    while True:
+        keys = event.getKeys(['space'])
+        if keys:
+            break
 
 def trials():
     """
@@ -69,7 +168,8 @@ def trials():
     win = visual.Window([1680,1050],
                           monitor = "testMonitor",
                           units = "cm",
-                          rgb=(-1,-1,-1),
+                          color = 'black',
+                          colorSpace='rgb',
                           fullscr = True)
 
     gabor = visual.GratingStim(win,
@@ -97,9 +197,9 @@ def trials():
     CONTRAST_5 = 0.34
     CONTRAST_6 = 0.40
     CONTRAST_7 = 0.46
-    RIGHT = 30
-    LEFT = -30
-    GABOR_INITIAL = 1
+    RIGHT = 10
+    LEFT = -10
+    GABOR_INITIAL = 0.5
     gabor_transparency = GABOR_INITIAL
 
 
@@ -176,6 +276,9 @@ def trials():
     for i in range(N_TRIALS):
         for trial_param in trial_params.keys():
             if i in trial_params[trial_param]:
+                trial_message = generate_log(trial_param)
+                logging.warn("TRIAL {}: {}".format(i,trial_message))
+                logging.flush()
                 first_stim = trial_param[0]
                 second_stim = trial_param[1]
 
@@ -193,12 +296,15 @@ def trials():
                 trial(win, first_stim, second_stim, dys)
                 break
 
+        press_to_continue(win)
 
+#TODO: Feedback (based on trials which have gabors, given that it's a gabor AND they bet on it, what is the probability they were right?)
+#TODO: Floating
+#TODO: File saving
 
 def main():
 
     trials()
-
 
 if __name__ == '__main__':
     main()
