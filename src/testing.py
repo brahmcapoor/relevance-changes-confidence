@@ -5,9 +5,14 @@ def stimulus_and_mask(win, stimulus, stim_number, mask_1, mask_2, prompt, dys):
     """
     Shows a single stimulus begind a mask. Params are
     self explanatory
+
+    If the trial is a dys trial, returns a boolean indicating if the stimulus
+    was seen. If the trial is a normal trial, returns an integer indicating if
+    the stimulus was percieved to be angled right or left.
     """
-    N_MASK_SECONDS = 0.5
-    N_STIM_SECONDS = 0.1
+
+    N_MASK_SECONDS = 0
+    N_STIM_SECONDS = 1
 
     #first stimulus
     for i in range(int(N_MASK_SECONDS * 60)):
@@ -27,16 +32,19 @@ def stimulus_and_mask(win, stimulus, stim_number, mask_1, mask_2, prompt, dys):
     prompt.draw()
     win.flip()
 
+    return_val = ""
     if dys:
         while True:
-            keys = event.getKeys(['y', 'n'])
+            keys = event.getKeys(['right', 'left'])
             if keys:
                 break
 
-        if keys[0] == 'y':
+        if keys[0] == 'right':
             logging.warn("Subject saw {} stimulus".format(stim_number))
+            return_val = True
         else:
             logging.warn("Subject didn't see {} stimulus".format(stim_number))
+            return_val = False
 
     else:
         while True:
@@ -46,11 +54,15 @@ def stimulus_and_mask(win, stimulus, stim_number, mask_1, mask_2, prompt, dys):
 
         if keys[0] == 'right':
             logging.warn("Subject said {} stimulus was tilted right".format(stim_number))
+            return_val = 10
         else:
             logging.warn("Subject said {} stimulus was tilted left".format(stim_number))
+            return_val = -10
 
     logging.flush()
     win.flip()
+
+    return return_val
 
 def trial(win, stim_1, stim_2, calibrator=False):
     """
@@ -59,6 +71,10 @@ def trial(win, stim_1, stim_2, calibrator=False):
     stim_1 = stimulus shown first
     stim_2 = stimulus shown second
     calibrator = if True, question is "Did you see something?"
+
+    Returns a tuple: (a, b, c) where a is the index of the trial that the
+    subject is more confident about, b is the response to the first
+    stimulus and c is the response to the second stimulus
     """
 
     mask_1 = visual.GratingStim(win, tex='sin', mask='gauss', sf= 5,
@@ -83,12 +99,13 @@ def trial(win, stim_1, stim_2, calibrator=False):
                                     alignHoriz = 'center',
                                     alignVert = 'center')
 
-    stimulus_and_mask(win, stim_1, "first", mask_1, mask_2, prompt, calibrator)
-    stimulus_and_mask(win, stim_2, "second", mask_1, mask_2, prompt, calibrator)
-
+    stim_1_response = stimulus_and_mask(win, stim_1, "first", mask_1, mask_2, prompt, calibrator)
+    stim_2_response = stimulus_and_mask(win, stim_2, "second", mask_1, mask_2, prompt, calibrator)
 
     last_question.draw()
     win.flip()
+
+    confident_trial = 0
 
     while True:
         keys = event.getKeys(['1', '2'])
@@ -97,10 +114,31 @@ def trial(win, stim_1, stim_2, calibrator=False):
 
     if keys[0] == '1':
         logging.warn("Subject was more confident about the first stimulus")
+        confident_trial = 0
     else:
         logging.warn("Subject was more confident about the second stimulus")
+        confident_trial = 1
+
 
     logging.flush()
+
+    return (confident_trial, stim_1_response, stim_2_response)
+
+def show_feedback(window, proportion):
+    """
+    The feedback to be shown every 10 trials
+    """
+
+    feedback = "Your accuracy: {}%".format(proportion)
+
+    feedback = visual.TextStim(window,
+                               text = feedback,
+                               alignHoriz = 'center',
+                               alignVert = 'center')
+
+    for frameN in range(120):
+        feedback.draw()
+        window.flip()
 
 def generate_log(trial_param):
 
@@ -160,17 +198,10 @@ def press_to_continue(window):
         if keys:
             break
 
-def trials():
+def trials(win):
     """
     Wraps around all the trials
     """
-
-    win = visual.Window([1680,1050],
-                          monitor = "testMonitor",
-                          units = "cm",
-                          color = 'black',
-                          colorSpace='rgb',
-                          fullscr = True)
 
     gabor = visual.GratingStim(win,
                                tex='sin',
@@ -199,6 +230,7 @@ def trials():
     CONTRAST_7 = 0.46
     RIGHT = 10
     LEFT = -10
+
     GABOR_INITIAL = 0.5
     gabor_transparency = GABOR_INITIAL
 
@@ -273,16 +305,35 @@ def trials():
 
     }
 
+    n_correct = 0
+    n_counted = 0
+
+    last_one_correct = False
+
     for i in range(N_TRIALS):
+
+        try:
+            logging.warn("\n\n{} correct out of {} ({}%) in the last {} trials".format(n_correct, n_counted, (n_correct/n_counted * 100), i % 10 + 1))
+        except ZeroDivisionError:
+            logging.warn("\n\nNo statistics")
+
+        if not i % 10 and i > 0:
+            show_feedback(win, (n_correct/n_counted) * 100)
+            n_correct = 0
+            n_counted = 0
+
         for trial_param in trial_params.keys():
             if i in trial_params[trial_param]:
+
                 trial_message = generate_log(trial_param)
-                logging.warn("TRIAL {}: {}".format(i,trial_message))
+                logging.warn("TRIAL {}: {}".format(i + 1, trial_message))
                 logging.flush()
+
                 first_stim = trial_param[0]
                 second_stim = trial_param[1]
+                gabor_visible = trial_param[2]
 
-                if trial_param[2]:
+                if gabor_visible:
                     gabor.opacity = gabor_transparency
                 else:
                     gabor.opacity = 0
@@ -293,18 +344,56 @@ def trials():
 
                 dys = trial_param[5]
 
-                trial(win, first_stim, second_stim, dys)
-                break
+                trial_response = trial(win, first_stim, second_stim, dys)
+                confident_trial = trial_response[0]
+                confident_response = trial_response[confident_trial + 1]
 
+                # Now we check the results of the trial and log/change variables
+                if trial_param[confident_trial] == gabor and gabor_visible:
+                    # a trial that is counted towards the accuracy calculation
+                    n_counted += 1
+                    logging.warn("Counted trial")
+
+                    if confident_response == gabor.ori
+                        #subject got it right
+                        logging.warn("Correct trial")
+                        n_correct += 1
+
+                        if last_one_correct:
+                            # ensuring floating only happens after two correct trials
+                            logging.warn("Two correct trials. Decreasing gabor transparency")
+                            logging.flush()
+                            gabor_transparency -= 0.02
+                            if gabor_transparency < 0.02:
+                                gabor_transparency = 0.02
+                                logging.warn("MINIMUM CONTRAST FOR GABOR REACHED")
+                                logging.flush()
+                        last_one_correct = not last_one_correct
+
+                    else:
+                        # incorrect trial. Increase gabor transparency
+                        logging.warn("Incorrect trial. Increasing gabor transparency")
+                        logging.flush()
+                        gabor_transparency += 0.02
+                        if gabor_transparency > 1:
+                            gabor_transparency = 1
+                            logging.warn("MAXIMUM CONTRAST FOR GABOR REACHED")
+                            logging.flush()
+                        last_one_correct = False
+
+
+                break
         press_to_continue(win)
 
-#TODO: Feedback (based on trials which have gabors, given that it's a gabor AND they bet on it, what is the probability they were right?)
-#TODO: Floating
 #TODO: File saving
 
-def main():
+def main(trial):
 
-    trials()
+    window = trial.window
+    subject_number = trial.subject_number
+    round_Number = trial.round_number
+
+    trials(window)
 
 if __name__ == '__main__':
     main()
