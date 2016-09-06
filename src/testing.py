@@ -1,5 +1,7 @@
+from __future__ import division
 from psychopy import visual, core, event, logging
 from random import shuffle
+import csv, os
 
 def stimulus_and_mask(win, stimulus, stim_number, mask_1, mask_2, prompt, dys):
     """
@@ -198,7 +200,7 @@ def press_to_continue(window):
         if keys:
             break
 
-def trials(win):
+def trials(win, filename):
     """
     Wraps around all the trials
     """
@@ -241,67 +243,69 @@ def trials(win):
 
     trial_params = {
 
-        # Key format: (first_stimulus, gabor_visibility, disc_contrast, gabor_orientation, DYS trial)
+        # Key format: (first_stimulus, second_stimulus gabor_visibility, disc_contrast, gabor_orientation, DYS trial)
 
-        (gabor, disc,  False, CONTRAST_1, 0, False): all_trials[:1],
-        (disc, gabor,  False, CONTRAST_1, 0, False) : all_trials[1:2],
-        (gabor, disc,  False, CONTRAST_2, 0, False): all_trials[2:3],
-        (disc, gabor,  False, CONTRAST_2, 0, False) : all_trials[3:4],
-        (gabor, disc,  False, CONTRAST_3, 0, False): all_trials[4:5],
-        (disc, gabor,  False, CONTRAST_3, 0, False) : all_trials[5:6],
-        (gabor, disc,  False, CONTRAST_4, 0, False): all_trials[6:7],
-        (disc, gabor,  False, CONTRAST_4, 0, False) : all_trials[7:8],
-        (gabor, disc,  False, CONTRAST_5, 0, False): all_trials[8:9],
-        (disc, gabor,  False, CONTRAST_5, 0, False) : all_trials[9:10],
-        (gabor, disc,  False, CONTRAST_6, 0, False): all_trials[10:11],
-        (disc, gabor,  False, CONTRAST_6, 0, False) : all_trials[11:12],
-        (gabor, disc,  False, CONTRAST_7, 0, False): all_trials[12:13],
-        (disc, gabor,  False, CONTRAST_7, 0, False) : all_trials[13:14],
+        #For the first two paramenters, 0 represents a disc and 1 represents a gabor.
 
-        (gabor, disc,  True, CONTRAST_1, RIGHT, False): all_trials[14:16],
-        (disc, gabor,  True, CONTRAST_1, RIGHT, False) : all_trials[16:18],
-        (gabor, disc,  True, CONTRAST_2, RIGHT, False): all_trials[18:20],
-        (disc, gabor,  True, CONTRAST_2, RIGHT, False) : all_trials[20:22],
-        (gabor, disc,  True, CONTRAST_3, RIGHT, False): all_trials[22:24],
-        (disc, gabor,  True, CONTRAST_3, RIGHT, False) : all_trials[24:26],
-        (gabor, disc,  True, CONTRAST_4, RIGHT, False): all_trials[26:28],
-        (disc, gabor,  True, CONTRAST_4, RIGHT, False) : all_trials[28:30],
-        (gabor, disc,  True, CONTRAST_5, RIGHT, False): all_trials[30:32],
-        (disc, gabor,  True, CONTRAST_5, RIGHT, False) : all_trials[32:34],
-        (gabor, disc,  True, CONTRAST_6, RIGHT, False): all_trials[34:36],
-        (disc, gabor,  True, CONTRAST_6, RIGHT, False) : all_trials[36:38],
-        (gabor, disc,  True, CONTRAST_7, RIGHT, False): all_trials[38:40],
-        (disc, gabor,  True, CONTRAST_7, RIGHT, False) : all_trials[40:42],
+        (1, 0,  False, CONTRAST_1, 0, False): all_trials[:1],
+        (0, 1,  False, CONTRAST_1, 0, False) : all_trials[1:2],
+        (1, 0,  False, CONTRAST_2, 0, False): all_trials[2:3],
+        (0, 1,  False, CONTRAST_2, 0, False) : all_trials[3:4],
+        (1, 0,  False, CONTRAST_3, 0, False): all_trials[4:5],
+        (0, 1,  False, CONTRAST_3, 0, False) : all_trials[5:6],
+        (1, 0,  False, CONTRAST_4, 0, False): all_trials[6:7],
+        (0, 1,  False, CONTRAST_4, 0, False) : all_trials[7:8],
+        (1, 0,  False, CONTRAST_5, 0, False): all_trials[8:9],
+        (0, 1,  False, CONTRAST_5, 0, False) : all_trials[9:10],
+        (1, 0,  False, CONTRAST_6, 0, False): all_trials[10:11],
+        (0, 1,  False, CONTRAST_6, 0, False) : all_trials[11:12],
+        (1, 0,  False, CONTRAST_7, 0, False): all_trials[12:13],
+        (0, 1,  False, CONTRAST_7, 0, False) : all_trials[13:14],
 
-        (gabor, disc,  True, CONTRAST_1, LEFT, False): all_trials[42:44],
-        (disc, gabor,  True, CONTRAST_1, LEFT, False) : all_trials[44:46],
-        (gabor, disc,  True, CONTRAST_2, LEFT, False): all_trials[46:48],
-        (disc, gabor,  True, CONTRAST_2, LEFT, False) : all_trials[48:50],
-        (gabor, disc,  True, CONTRAST_3, LEFT, False): all_trials[50:52],
-        (disc, gabor,  True, CONTRAST_3, LEFT, False) : all_trials[52:54],
-        (gabor, disc,  True, CONTRAST_4, LEFT, False): all_trials[54:56],
-        (disc, gabor,  True, CONTRAST_4, LEFT, False) : all_trials[56:58],
-        (gabor, disc,  True, CONTRAST_5, LEFT, False): all_trials[58:60],
-        (disc, gabor,  True, CONTRAST_5, LEFT, False) : all_trials[60:62],
-        (gabor, disc,  True, CONTRAST_6, LEFT, False): all_trials[62:64],
-        (disc, gabor,  True, CONTRAST_6, LEFT, False) : all_trials[64:66],
-        (gabor, disc,  True, CONTRAST_7, LEFT, False): all_trials[66:68],
-        (disc, gabor,  True, CONTRAST_7, LEFT, False) : all_trials[68:70],
+        (1, 0,  True, CONTRAST_1, RIGHT, False): all_trials[14:16],
+        (0, 1,  True, CONTRAST_1, RIGHT, False) : all_trials[16:18],
+        (1, 0,  True, CONTRAST_2, RIGHT, False): all_trials[18:20],
+        (0, 1,  True, CONTRAST_2, RIGHT, False) : all_trials[20:22],
+        (1, 0,  True, CONTRAST_3, RIGHT, False): all_trials[22:24],
+        (0, 1,  True, CONTRAST_3, RIGHT, False) : all_trials[24:26],
+        (1, 0,  True, CONTRAST_4, RIGHT, False): all_trials[26:28],
+        (0, 1,  True, CONTRAST_4, RIGHT, False) : all_trials[28:30],
+        (1, 0,  True, CONTRAST_5, RIGHT, False): all_trials[30:32],
+        (0, 1,  True, CONTRAST_5, RIGHT, False) : all_trials[32:34],
+        (1, 0,  True, CONTRAST_6, RIGHT, False): all_trials[34:36],
+        (0, 1,  True, CONTRAST_6, RIGHT, False) : all_trials[36:38],
+        (1, 0,  True, CONTRAST_7, RIGHT, False): all_trials[38:40],
+        (0, 1,  True, CONTRAST_7, RIGHT, False) : all_trials[40:42],
 
-        (gabor, disc,  False, CONTRAST_1, 0, True): all_trials[70:71],
-        (disc, gabor,  False, CONTRAST_1, 0, True) : all_trials[71:72],
-        (gabor, disc,  False, CONTRAST_2, 0, True): all_trials[72:73],
-        (disc, gabor,  False, CONTRAST_2, 0, True) : all_trials[73:74],
-        (gabor, disc,  False, CONTRAST_3, 0, True): all_trials[74:75],
-        (disc, gabor,  False, CONTRAST_3, 0, True) : all_trials[75:76],
-        (gabor, disc,  False, CONTRAST_4, 0, True): all_trials[76:77],
-        (disc, gabor,  False, CONTRAST_4, 0, True) : all_trials[77:78],
-        (gabor, disc,  False, CONTRAST_5, 0, True): all_trials[78:79],
-        (disc, gabor,  False, CONTRAST_5, 0, True) : all_trials[79:80],
-        (gabor, disc,  False, CONTRAST_6, 0, True): all_trials[80:81],
-        (disc, gabor,  False, CONTRAST_6, 0, True) : all_trials[81:82],
-        (gabor, disc,  False, CONTRAST_7, 0, True): all_trials[82:83],
-        (disc, gabor,  False, CONTRAST_7, 0, True) : all_trials[83:]
+        (1, 0,  True, CONTRAST_1, LEFT, False): all_trials[42:44],
+        (0, 1,  True, CONTRAST_1, LEFT, False) : all_trials[44:46],
+        (1, 0,  True, CONTRAST_2, LEFT, False): all_trials[46:48],
+        (0, 1,  True, CONTRAST_2, LEFT, False) : all_trials[48:50],
+        (1, 0,  True, CONTRAST_3, LEFT, False): all_trials[50:52],
+        (0, 1,  True, CONTRAST_3, LEFT, False) : all_trials[52:54],
+        (1, 0,  True, CONTRAST_4, LEFT, False): all_trials[54:56],
+        (0, 1,  True, CONTRAST_4, LEFT, False) : all_trials[56:58],
+        (1, 0,  True, CONTRAST_5, LEFT, False): all_trials[58:60],
+        (0, 1,  True, CONTRAST_5, LEFT, False) : all_trials[60:62],
+        (1, 0,  True, CONTRAST_6, LEFT, False): all_trials[62:64],
+        (0, 1,  True, CONTRAST_6, LEFT, False) : all_trials[64:66],
+        (1, 0,  True, CONTRAST_7, LEFT, False): all_trials[66:68],
+        (0, 1,  True, CONTRAST_7, LEFT, False) : all_trials[68:70],
+
+        (1, 0,  False, CONTRAST_1, 0, True): all_trials[70:71],
+        (0, 1,  False, CONTRAST_1, 0, True) : all_trials[71:72],
+        (1, 0,  False, CONTRAST_2, 0, True): all_trials[72:73],
+        (0, 1,  False, CONTRAST_2, 0, True) : all_trials[73:74],
+        (1, 0,  False, CONTRAST_3, 0, True): all_trials[74:75],
+        (0, 1,  False, CONTRAST_3, 0, True) : all_trials[75:76],
+        (1, 0,  False, CONTRAST_4, 0, True): all_trials[76:77],
+        (0, 1,  False, CONTRAST_4, 0, True) : all_trials[77:78],
+        (1, 0,  False, CONTRAST_5, 0, True): all_trials[78:79],
+        (0, 1,  False, CONTRAST_5, 0, True) : all_trials[79:80],
+        (1, 0,  False, CONTRAST_6, 0, True): all_trials[80:81],
+        (0, 1,  False, CONTRAST_6, 0, True) : all_trials[81:82],
+        (1, 0,  False, CONTRAST_7, 0, True): all_trials[82:83],
+        (0, 1,  False, CONTRAST_7, 0, True) : all_trials[83:]
 
     }
 
@@ -329,8 +333,8 @@ def trials(win):
                 logging.warn("TRIAL {}: {}".format(i + 1, trial_message))
                 logging.flush()
 
-                first_stim = trial_param[0]
-                second_stim = trial_param[1]
+                first_stim = [disc, gabor][trial_param[0]]
+                second_stim = [disc, gabor][trial_param[1]]
                 gabor_visible = trial_param[2]
 
                 if gabor_visible:
@@ -349,12 +353,12 @@ def trials(win):
                 confident_response = trial_response[confident_trial + 1]
 
                 # Now we check the results of the trial and log/change variables
-                if trial_param[confident_trial] == gabor and gabor_visible:
+                if trial_param[confident_trial] == 1 and gabor_visible:
                     # a trial that is counted towards the accuracy calculation
                     n_counted += 1
                     logging.warn("Counted trial")
 
-                    if confident_response == gabor.ori
+                    if confident_response == gabor.ori:
                         #subject got it right
                         logging.warn("Correct trial")
                         n_correct += 1
@@ -382,18 +386,47 @@ def trials(win):
                         last_one_correct = False
 
 
+                result = [i+1] + list(trial_param) + list(trial_response)
+                logging.warn("Result: {}".format(result))
+
+                with open(filename, 'ab') as f:
+                    wr = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
+                    wr.writerow(result)
+
                 break
+
         press_to_continue(win)
 
 #TODO: File saving
 
 def main(trial):
 
+    logging.warn(os.getcwd())
+
     window = trial.window
     subject_number = trial.subject_number
     round_Number = trial.round_number
 
-    trials(window)
+    filename = ""
+    if "src" in os.getcwd():
+        filename = "../subject_logs/subject_{}.csv".format(subject_number)
+    else:
+        filename = "subject_logs/subject_{}.csv".format(subject_number)
+
+    with open(filename, 'wb') as f:
+        wr = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
+
+        header = ["", "Trial parameters", "", "", "", "", "", "Subject Response", "", ""]
+
+        subheader = ["Trial number", "First trial gabor", "Second trial gabor",
+                  "Gabor visible", "Disc Contrast", "Gabor orientation",
+                  "DYS trial", "Confident Trial", "First Trial Response",
+                  "Second Trial Response"]
+
+        wr.writerow(header)
+        wr.writerow(subheader)
+
+    trials(window, filename)
 
 if __name__ == '__main__':
     main()

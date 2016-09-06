@@ -1,6 +1,6 @@
 from psychopy import gui, visual
 from experiment_objects import Trial
-import testing
+import testing, os, shutil
 
 def get_subject_info():
     check = gui.Dlg("Startup")
@@ -13,9 +13,25 @@ def get_subject_info():
 
     return tuple(check.data)
 
+def delete_logs():
+
+    folder = ""
+    if 'src' in os.getcwd():
+        folder = "../subject_logs"
+    else:
+        folder = "subject_logs"
+
+    if os.path.exists(folder):
+        shutil.rmtree(folder)
+
+    os.mkdir(folder)
+
 def main():
 
     new_experiment, subject_number, round_number = get_subject_info()
+
+    if new_experiment:
+        delete_logs()
 
     win = visual.Window([1680,1050],
                           monitor = "testMonitor",
