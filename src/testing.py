@@ -15,8 +15,8 @@ def stimulus_and_mask(win, stimulus, stim_number, mask_1, mask_2, prompt, dys):
     the stimulus was percieved to be angled right or left.
     """
 
-    N_MASK_SECONDS = 0
-    N_STIM_SECONDS = 1
+    N_MASK_SECONDS = 0.5
+    N_STIM_SECONDS = 0.1
 
     # first stimulus
     for i in range(int(N_MASK_SECONDS * 60)):
