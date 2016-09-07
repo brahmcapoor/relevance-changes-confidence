@@ -1,7 +1,9 @@
 from __future__ import division
 from psychopy import visual, core, event, logging
 from random import shuffle
-import csv, os
+import csv
+import os
+
 
 def stimulus_and_mask(win, stimulus, stim_number, mask_1, mask_2, prompt, dys):
     """
@@ -16,7 +18,7 @@ def stimulus_and_mask(win, stimulus, stim_number, mask_1, mask_2, prompt, dys):
     N_MASK_SECONDS = 0
     N_STIM_SECONDS = 1
 
-    #first stimulus
+    # first stimulus
     for i in range(int(N_MASK_SECONDS * 60)):
         mask_1.draw()
         mask_2.draw()
@@ -55,16 +57,19 @@ def stimulus_and_mask(win, stimulus, stim_number, mask_1, mask_2, prompt, dys):
                 break
 
         if keys[0] == 'right':
-            logging.warn("Subject said {} stimulus was tilted right".format(stim_number))
+            logging.warn("Subject said {} stimulus was tilted right"
+                         .format(stim_number))
             return_val = 10
         else:
-            logging.warn("Subject said {} stimulus was tilted left".format(stim_number))
+            logging.warn("Subject said {} stimulus was tilted left"
+                         .format(stim_number))
             return_val = -10
 
     logging.flush()
     win.flip()
 
     return return_val
+
 
 def trial(win, stim_1, stim_2, calibrator=False):
     """
@@ -79,11 +84,12 @@ def trial(win, stim_1, stim_2, calibrator=False):
     stimulus and c is the response to the second stimulus
     """
 
-    mask_1 = visual.GratingStim(win, tex='sin', mask='gauss', sf= 5,
-        name='gabor', size = [8,8], autoLog=False)
+    mask_1 = visual.GratingStim(win, tex='sin', mask='gauss', sf=5,
+                                name='gabor', size=[8, 8], autoLog=False)
 
-    mask_2 = visual.GratingStim(win, tex='sin', mask='gauss', sf= 5,
-        name='gabor', size = [8,8], ori = 90, autoLog=False)
+    mask_2 = visual.GratingStim(win, tex='sin', mask='gauss', sf=5,
+                                name='gabor', size=[8, 8], ori=90,
+                                autoLog=False)
 
     prompt = ""
     if calibrator:
@@ -92,17 +98,20 @@ def trial(win, stim_1, stim_2, calibrator=False):
         prompt = "Left or Right?"
 
     prompt = visual.TextStim(win,
-                             text = prompt,
-                             alignHoriz = 'center',
-                             alignVert = 'center')
+                             text=prompt,
+                             alignHoriz='center',
+                             alignVert='center')
 
     last_question = visual.TextStim(win,
-                                    text = "Which were you more confident about?",
-                                    alignHoriz = 'center',
-                                    alignVert = 'center')
+                                    text="Which were you more confident \
+                                          about?",
+                                    alignHoriz='center',
+                                    alignVert='center')
 
-    stim_1_response = stimulus_and_mask(win, stim_1, "first", mask_1, mask_2, prompt, calibrator)
-    stim_2_response = stimulus_and_mask(win, stim_2, "second", mask_1, mask_2, prompt, calibrator)
+    stim_1_response = stimulus_and_mask(win, stim_1, "first", mask_1, mask_2,
+                                        prompt, calibrator)
+    stim_2_response = stimulus_and_mask(win, stim_2, "second", mask_1, mask_2,
+                                        prompt, calibrator)
 
     last_question.draw()
     win.flip()
@@ -121,10 +130,10 @@ def trial(win, stim_1, stim_2, calibrator=False):
         logging.warn("Subject was more confident about the second stimulus")
         confident_trial = 1
 
-
     logging.flush()
 
     return (confident_trial, stim_1_response, stim_2_response)
+
 
 def show_feedback(window, proportion):
     """
@@ -134,13 +143,14 @@ def show_feedback(window, proportion):
     feedback = "Your accuracy: {}%".format(proportion)
 
     feedback = visual.TextStim(window,
-                               text = feedback,
-                               alignHoriz = 'center',
-                               alignVert = 'center')
+                               text=feedback,
+                               alignHoriz='center',
+                               alignVert='center')
 
     for frameN in range(120):
         feedback.draw()
         window.flip()
+
 
 def generate_log(trial_param):
 
@@ -149,11 +159,11 @@ def generate_log(trial_param):
     """
 
     first_stim, \
-    second_stim, \
-    gabor_visibility, \
-    disc_contrast, \
-    gabor_orientation, \
-    dys_trial = trial_param
+        second_stim, \
+        gabor_visibility, \
+        disc_contrast, \
+        gabor_orientation, \
+        dys_trial = trial_param
 
     gabor_index = ""
     if isinstance(first_stim, visual.GratingStim):
@@ -177,20 +187,17 @@ def generate_log(trial_param):
     else:
         trial_check = "tilt of stimulus"
 
+    return "Gabor is {} {}{}. Disc contrast is {}. Trial checks {}. ".format(
+        gabor_index, gabor_visible, gabor_tilt, disc_contrast,
+        trial_check)
 
-
-    return "Gabor is {} {}{}. Disc contrast is {}. Trial checks {}. ".format(gabor_index,
-                                                                             gabor_visible,
-                                                                             gabor_tilt,
-                                                                             disc_contrast,
-                                                                             trial_check)
 
 def press_to_continue(window):
 
     prompt = visual.TextStim(window,
-                             text = "Press space to continue",
-                             alignHoriz = 'center',
-                             alignVert = 'center')
+                             text="Press space to continue",
+                             alignHoriz='center',
+                             alignVert='center')
 
     prompt.draw()
     window.flip()
@@ -200,6 +207,7 @@ def press_to_continue(window):
         if keys:
             break
 
+
 def trials(win, filename):
     """
     Wraps around all the trials
@@ -208,19 +216,19 @@ def trials(win, filename):
     gabor = visual.GratingStim(win,
                                tex='sin',
                                mask='gauss',
-                               sf= 5,
+                               sf=5,
                                name='gabor',
-                               size = [8,8],
-                               ori = 5,
+                               size=[8, 8],
+                               ori=5,
                                autoLog=False,
-                               opacity = 0.5)
+                               opacity=0.5)
 
     disc = visual.Circle(win,
-                         radius = 2.6,
-                         fillColor = 'white',
-                         pos = (0,0),
-                         lineWidth = 0,
-                         opacity = 0.1)
+                         radius=2.6,
+                         fillColor='white',
+                         pos=(0, 0),
+                         lineWidth=0,
+                         opacity=0.1)
 
     N_TRIALS = 84
     CONTRAST_1 = 0.1
@@ -236,76 +244,77 @@ def trials(win, filename):
     GABOR_INITIAL = 0.5
     gabor_transparency = GABOR_INITIAL
 
-
-    #randomise trials
+    # randomise trials
     all_trials = [i for i in range(N_TRIALS)]
     shuffle(all_trials)
 
     trial_params = {
 
-        # Key format: (first_stimulus, second_stimulus gabor_visibility, disc_contrast, gabor_orientation, DYS trial)
+        # Key format: (first_stimulus, second_stimulus gabor_visibility,
+        # disc_contrast, gabor_orientation, DYS trial)
 
-        #For the first two paramenters, 0 represents a disc and 1 represents a gabor.
+        # For the first two paramenters, 0 represents a disc and 1 represents a
+        # gabor.
 
         (1, 0,  False, CONTRAST_1, 0, False): all_trials[:1],
-        (0, 1,  False, CONTRAST_1, 0, False) : all_trials[1:2],
+        (0, 1,  False, CONTRAST_1, 0, False): all_trials[1:2],
         (1, 0,  False, CONTRAST_2, 0, False): all_trials[2:3],
-        (0, 1,  False, CONTRAST_2, 0, False) : all_trials[3:4],
+        (0, 1,  False, CONTRAST_2, 0, False): all_trials[3:4],
         (1, 0,  False, CONTRAST_3, 0, False): all_trials[4:5],
-        (0, 1,  False, CONTRAST_3, 0, False) : all_trials[5:6],
+        (0, 1,  False, CONTRAST_3, 0, False): all_trials[5:6],
         (1, 0,  False, CONTRAST_4, 0, False): all_trials[6:7],
-        (0, 1,  False, CONTRAST_4, 0, False) : all_trials[7:8],
+        (0, 1,  False, CONTRAST_4, 0, False): all_trials[7:8],
         (1, 0,  False, CONTRAST_5, 0, False): all_trials[8:9],
-        (0, 1,  False, CONTRAST_5, 0, False) : all_trials[9:10],
+        (0, 1,  False, CONTRAST_5, 0, False): all_trials[9:10],
         (1, 0,  False, CONTRAST_6, 0, False): all_trials[10:11],
-        (0, 1,  False, CONTRAST_6, 0, False) : all_trials[11:12],
+        (0, 1,  False, CONTRAST_6, 0, False): all_trials[11:12],
         (1, 0,  False, CONTRAST_7, 0, False): all_trials[12:13],
-        (0, 1,  False, CONTRAST_7, 0, False) : all_trials[13:14],
+        (0, 1,  False, CONTRAST_7, 0, False): all_trials[13:14],
 
         (1, 0,  True, CONTRAST_1, RIGHT, False): all_trials[14:16],
-        (0, 1,  True, CONTRAST_1, RIGHT, False) : all_trials[16:18],
+        (0, 1,  True, CONTRAST_1, RIGHT, False): all_trials[16:18],
         (1, 0,  True, CONTRAST_2, RIGHT, False): all_trials[18:20],
-        (0, 1,  True, CONTRAST_2, RIGHT, False) : all_trials[20:22],
+        (0, 1,  True, CONTRAST_2, RIGHT, False): all_trials[20:22],
         (1, 0,  True, CONTRAST_3, RIGHT, False): all_trials[22:24],
-        (0, 1,  True, CONTRAST_3, RIGHT, False) : all_trials[24:26],
+        (0, 1,  True, CONTRAST_3, RIGHT, False): all_trials[24:26],
         (1, 0,  True, CONTRAST_4, RIGHT, False): all_trials[26:28],
-        (0, 1,  True, CONTRAST_4, RIGHT, False) : all_trials[28:30],
+        (0, 1,  True, CONTRAST_4, RIGHT, False): all_trials[28:30],
         (1, 0,  True, CONTRAST_5, RIGHT, False): all_trials[30:32],
-        (0, 1,  True, CONTRAST_5, RIGHT, False) : all_trials[32:34],
+        (0, 1,  True, CONTRAST_5, RIGHT, False): all_trials[32:34],
         (1, 0,  True, CONTRAST_6, RIGHT, False): all_trials[34:36],
-        (0, 1,  True, CONTRAST_6, RIGHT, False) : all_trials[36:38],
+        (0, 1,  True, CONTRAST_6, RIGHT, False): all_trials[36:38],
         (1, 0,  True, CONTRAST_7, RIGHT, False): all_trials[38:40],
-        (0, 1,  True, CONTRAST_7, RIGHT, False) : all_trials[40:42],
+        (0, 1,  True, CONTRAST_7, RIGHT, False): all_trials[40:42],
 
         (1, 0,  True, CONTRAST_1, LEFT, False): all_trials[42:44],
-        (0, 1,  True, CONTRAST_1, LEFT, False) : all_trials[44:46],
+        (0, 1,  True, CONTRAST_1, LEFT, False): all_trials[44:46],
         (1, 0,  True, CONTRAST_2, LEFT, False): all_trials[46:48],
-        (0, 1,  True, CONTRAST_2, LEFT, False) : all_trials[48:50],
+        (0, 1,  True, CONTRAST_2, LEFT, False): all_trials[48:50],
         (1, 0,  True, CONTRAST_3, LEFT, False): all_trials[50:52],
-        (0, 1,  True, CONTRAST_3, LEFT, False) : all_trials[52:54],
+        (0, 1,  True, CONTRAST_3, LEFT, False): all_trials[52:54],
         (1, 0,  True, CONTRAST_4, LEFT, False): all_trials[54:56],
-        (0, 1,  True, CONTRAST_4, LEFT, False) : all_trials[56:58],
+        (0, 1,  True, CONTRAST_4, LEFT, False): all_trials[56:58],
         (1, 0,  True, CONTRAST_5, LEFT, False): all_trials[58:60],
-        (0, 1,  True, CONTRAST_5, LEFT, False) : all_trials[60:62],
+        (0, 1,  True, CONTRAST_5, LEFT, False): all_trials[60:62],
         (1, 0,  True, CONTRAST_6, LEFT, False): all_trials[62:64],
-        (0, 1,  True, CONTRAST_6, LEFT, False) : all_trials[64:66],
+        (0, 1,  True, CONTRAST_6, LEFT, False): all_trials[64:66],
         (1, 0,  True, CONTRAST_7, LEFT, False): all_trials[66:68],
-        (0, 1,  True, CONTRAST_7, LEFT, False) : all_trials[68:70],
+        (0, 1,  True, CONTRAST_7, LEFT, False): all_trials[68:70],
 
         (1, 0,  False, CONTRAST_1, 0, True): all_trials[70:71],
-        (0, 1,  False, CONTRAST_1, 0, True) : all_trials[71:72],
+        (0, 1,  False, CONTRAST_1, 0, True): all_trials[71:72],
         (1, 0,  False, CONTRAST_2, 0, True): all_trials[72:73],
-        (0, 1,  False, CONTRAST_2, 0, True) : all_trials[73:74],
+        (0, 1,  False, CONTRAST_2, 0, True): all_trials[73:74],
         (1, 0,  False, CONTRAST_3, 0, True): all_trials[74:75],
-        (0, 1,  False, CONTRAST_3, 0, True) : all_trials[75:76],
+        (0, 1,  False, CONTRAST_3, 0, True): all_trials[75:76],
         (1, 0,  False, CONTRAST_4, 0, True): all_trials[76:77],
-        (0, 1,  False, CONTRAST_4, 0, True) : all_trials[77:78],
+        (0, 1,  False, CONTRAST_4, 0, True): all_trials[77:78],
         (1, 0,  False, CONTRAST_5, 0, True): all_trials[78:79],
-        (0, 1,  False, CONTRAST_5, 0, True) : all_trials[79:80],
+        (0, 1,  False, CONTRAST_5, 0, True): all_trials[79:80],
         (1, 0,  False, CONTRAST_6, 0, True): all_trials[80:81],
-        (0, 1,  False, CONTRAST_6, 0, True) : all_trials[81:82],
+        (0, 1,  False, CONTRAST_6, 0, True): all_trials[81:82],
         (1, 0,  False, CONTRAST_7, 0, True): all_trials[82:83],
-        (0, 1,  False, CONTRAST_7, 0, True) : all_trials[83:]
+        (0, 1,  False, CONTRAST_7, 0, True): all_trials[83:]
 
     }
 
@@ -316,11 +325,16 @@ def trials(win, filename):
 
     for i in range(N_TRIALS):
 
+        press_to_continue(win)
+
         try:
-            logging.warn("\n\n{} correct out of {} ({}%) in the last {} trials".format(n_correct, n_counted, (n_correct/n_counted * 100), i % 10 + 1))
+            logging.warn("\n\n{} correct out of {} ({}%) in the last {} trials"
+                         .format(n_correct, n_counted,
+                                 (n_correct/n_counted * 100), i % 10 + 1))
         except ZeroDivisionError:
             logging.warn("\n\nNo statistics")
 
+        logging.flush()
         if not i % 10 and i > 0:
             show_feedback(win, (n_correct/n_counted) * 100)
             n_correct = 0
@@ -352,42 +366,48 @@ def trials(win, filename):
                 confident_trial = trial_response[0]
                 confident_response = trial_response[confident_trial + 1]
 
-                # Now we check the results of the trial and log/change variables
-                if trial_param[confident_trial] == 1 and gabor_visible:
+                # Now we check the results of the trial and log/change
+                # variables
+                if (trial_param[confident_trial] == 1) and gabor_visible:
                     # a trial that is counted towards the accuracy calculation
                     n_counted += 1
                     logging.warn("Counted trial")
 
                     if confident_response == gabor.ori:
-                        #subject got it right
+                        # subject got it right
                         logging.warn("Correct trial")
                         n_correct += 1
 
                         if last_one_correct:
-                            # ensuring floating only happens after two correct trials
-                            logging.warn("Two correct trials. Decreasing gabor transparency")
+                            # ensuring floating only happens after two correct
+                            # trials
+                            logging.warn("Two correct trials. Decreasing gabor \
+                                         transparency")
                             logging.flush()
                             gabor_transparency -= 0.02
                             if gabor_transparency < 0.02:
                                 gabor_transparency = 0.02
-                                logging.warn("MINIMUM CONTRAST FOR GABOR REACHED")
+                                logging.warn("MINIMUM CONTRAST FOR GABOR \
+                                             REACHED")
                                 logging.flush()
                         last_one_correct = not last_one_correct
 
                     else:
                         # incorrect trial. Increase gabor transparency
-                        logging.warn("Incorrect trial. Increasing gabor transparency")
+                        logging.warn("Incorrect trial. Increasing gabor \
+                                     transparency")
                         logging.flush()
+
                         gabor_transparency += 0.02
+
                         if gabor_transparency > 1:
                             gabor_transparency = 1
                             logging.warn("MAXIMUM CONTRAST FOR GABOR REACHED")
                             logging.flush()
+
                         last_one_correct = False
 
-
                 result = [i+1] + list(trial_param) + list(trial_response)
-                logging.warn("Result: {}".format(result))
 
                 with open(filename, 'ab') as f:
                     wr = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
@@ -395,13 +415,8 @@ def trials(win, filename):
 
                 break
 
-        press_to_continue(win)
-
-#TODO: File saving
 
 def main(trial):
-
-    logging.warn(os.getcwd())
 
     window = trial.window
     subject_number = trial.subject_number
@@ -416,12 +431,13 @@ def main(trial):
     with open(filename, 'wb') as f:
         wr = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
 
-        header = ["", "Trial parameters", "", "", "", "", "", "Subject Response", "", ""]
+        header = ["", "Trial parameters", "", "", "", "", "",
+                  "Subject Response", "", ""]
 
         subheader = ["Trial number", "First trial gabor", "Second trial gabor",
-                  "Gabor visible", "Disc Contrast", "Gabor orientation",
-                  "DYS trial", "Confident Trial", "First Trial Response",
-                  "Second Trial Response"]
+                     "Gabor visible", "Disc Contrast", "Gabor orientation",
+                     "DYS trial", "Confident Trial", "First Trial Response",
+                     "Second Trial Response"]
 
         wr.writerow(header)
         wr.writerow(subheader)

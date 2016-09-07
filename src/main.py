@@ -1,6 +1,9 @@
 from psychopy import gui, visual
 from experiment_objects import Trial
-import testing, os, shutil
+import testing
+import os
+import shutil
+
 
 def get_subject_info():
     check = gui.Dlg("Startup")
@@ -12,6 +15,7 @@ def get_subject_info():
     check.show()
 
     return tuple(check.data)
+
 
 def delete_logs():
 
@@ -26,6 +30,7 @@ def delete_logs():
 
     os.mkdir(folder)
 
+
 def main():
 
     new_experiment, subject_number, round_number = get_subject_info()
@@ -33,19 +38,16 @@ def main():
     if new_experiment:
         delete_logs()
 
-    win = visual.Window([1680,1050],
-                          monitor = "testMonitor",
-                          units = "cm",
-                          color = 'black',
-                          colorSpace='rgb',
-                          fullscr = True)
-
+    win = visual.Window([1680, 1050],
+                        monitor="testMonitor",
+                        units="cm",
+                        color='black',
+                        colorSpace='rgb',
+                        fullscr=True)
 
     trial = Trial(win, subject_number, round_number)
 
     testing.main(trial)
-
-
 
 if __name__ == '__main__':
     main()
