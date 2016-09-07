@@ -4,6 +4,8 @@ from random import shuffle
 import csv
 import os
 
+# TODO: figure out what the problem with input is
+
 
 def stimulus_and_mask(win, stimulus, stim_number, mask_1, mask_2, prompt, dys):
     """
