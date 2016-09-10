@@ -1,6 +1,6 @@
 from psychopy import gui, visual
 from experiment_objects import Trial
-import testing
+import new_testing
 import os
 import shutil
 
@@ -38,16 +38,16 @@ def main():
     if new_experiment:
         delete_logs()
 
-    win = visual.Window([1680, 1050],
-                        monitor="testMonitor",
-                        units="cm",
-                        color='black',
-                        colorSpace='rgb',
-                        fullscr=True)
+    window = visual.Window([1680, 1050],
+                           monitor="testMonitor",
+                           units="cm",
+                           color='black',
+                           colorSpace='rgb',
+                           fullscr=True)
 
-    trial = Trial(win, subject_number, round_number)
+    trial = Trial(window, subject_number, round_number)
 
-    testing.main(trial)
+    new_testing.main(trial)
 
 if __name__ == '__main__':
     main()
