@@ -9,6 +9,8 @@ def generate_log_message(param):
     """
     Generates the log message for a specific trial, given the paramter tuple
     """
+    logging.warn("Parameter: {}".format(param))
+    logging.flush()
     condition = param[0]
     first_stim = ""
     second_stim = ""
@@ -23,16 +25,31 @@ def generate_log_message(param):
         detail = "Disc contrast is {}%.".format(16*param[2]-15)
     if condition == 2:
         if param[1]:
-            first_stim = "Right tilted gabor"
+            first_stim = "right tilted gabor"
         else:
-            first_stim = "Left tilted gabor"
+            first_stim = "left tilted gabor"
 
         if param[2]:
-            second_stim = "Right tilted gabor"
+            second_stim = "right tilted gabor"
         else:
-            second_stim = "Left tilted gabor"
+            second_stim = "left tilted gabor"
     if condition == 3:
-        pass
+        if param[1]:
+            first_stim = "blank"
+            if param[2] == 0:
+                second_stim = "disc"
+            elif param[2] == 1:
+                second_stim = "left tilted gabor"
+            else:
+                second_stim = "right tilted gabor"
+        else:
+            second_stim = "blank"
+            if param[2] == 0:
+                first_stim = "disc"
+            elif param[2] == 1:
+                first_stim = "left tilted gabor"
+            else:
+                first_stim = "right tilted gabor"
 
     log_message = "Condition {}. ".format(condition)
     log_message += "First Stimulus is the {}. ".format(first_stim)
@@ -41,6 +58,21 @@ def generate_log_message(param):
 
     logging.warn(log_message)
     logging.flush()
+
+
+def press_to_continue(window):
+
+    prompt = visual.TextStim(window,
+                             text="Press space to continue",
+                             alignHoriz='center',
+                             alignVert='center')
+
+    prompt.draw()
+    window.flip()
+
+    event.waitKeys(keyList=['space'])
+
+    window.flip()
 
 
 def show_feedback(window, proportion):
@@ -57,7 +89,7 @@ def show_feedback(window, proportion):
             window.flip()
 
 
-def stimulus_and_mask(window, stimulus, question):
+def stimulus_and_mask(window, stimulus, question, block3):
     N_MASK_SECONDS = 0.5
     N_STIM_SECONDS = 0.1
 
@@ -90,9 +122,15 @@ def stimulus_and_mask(window, stimulus, question):
 
     keys = event.waitKeys(keyList=['left', 'right'])
     if keys[0] == 'right':
-        logging.warn("Subject said RIGHT")
+        if not block3:
+            logging.warn("Subject said RIGHT")
+        else:
+            logging.warn("Subject saw stimulus")
     else:
-        logging.warn("Subject said LEFT")
+        if not block3:
+            logging.warn("Subject said LEFT")
+        else:
+            logging.warn("Subject didn't see stimulus")
     logging.flush()
 
     window.flip()
@@ -100,26 +138,42 @@ def stimulus_and_mask(window, stimulus, question):
     return int(keys[0] == 'right')
 
 
-def trial(window, first_stim, second_stim, question_1, question_2):
-    response_1 = stimulus_and_mask(window, first_stim, question_1)
-    response_2 = stimulus_and_mask(window, second_stim, question_1)
+def trial(window, first_stim, second_stim, question_1, question_2,
+          block3=False):
+    response_1 = stimulus_and_mask(window, first_stim, question_1, block3)
+    response_2 = stimulus_and_mask(window, second_stim, question_1, block3)
 
     last_question = visual.TextStim(window,
                                     text=question_2)
 
+    if block3:
+        if not(response_1 or response_2):
+            return (0, 0, 2)
     last_question.draw()
     window.flip()
 
     keys = event.waitKeys(keyList=['1', '2'])
     if keys[0] == '1':
-        logging.warn("Subject more confident about the first trial")
+        if not block3:
+            logging.warn("Subject more confident about the first trial")
+        else:
+            logging.warn("Subject saw a Gabor")
     else:
-        logging.warn("Subject more confident about the second trial")
+        if not block3:
+            logging.warn("Subject more confident about the second trial")
+        else:
+            logging.warn("Subject saw a disc")
     logging.flush()
 
     window.flip()
 
     return (response_1, response_2, int(keys[0])-1)
+
+
+def find_param(trial_num, trial_params):
+    for param in trial_params.keys():
+        if trial_num in trial_params[param]:
+            return param
 
 
 def block_1_trials():
@@ -161,24 +215,11 @@ def block_1_trials():
     return trial_params
 
 
-def find_param(trial_num, trial_params):
-    for param in trial_params.keys():
-        if trial_num in trial_params[param]:
-            return param
-
-
-def block_1(window, filename):
+def block_1(window, filename, discs):
 
     # Declaring the constants.
-    CONTRASTS = [0, 0.01, 0.17, 0.33, 0.49, 0.65, 0.81, 0.97]  # disc contrasts
     TILT_ANGlE = 10  # for the gabor
     gabor_contrast = 0.5
-
-    discs = [visual.Circle(win=window,
-                           radius=2.6,
-                           fillColor='white',
-                           lineWidth=0,
-                           opacity=contrast) for contrast in CONTRASTS]
 
     blank = discs[0]
 
@@ -205,6 +246,7 @@ def block_1(window, filename):
     n_counted = 0
 
     for trial_num in range(54):
+        press_to_continue(window)
 
         result = [trial_num + 1]
 
@@ -285,6 +327,148 @@ def block_1(window, filename):
     return gabor_transparency
 
 
+def block_2_trials():
+
+    N_TRIALS = 34
+    all_trials = [i for i in range(N_TRIALS)]
+    shuffle(all_trials)
+
+    trial_params = {
+        # format: (condition, stimulus position, stimulus
+        # (0= disc, 1=gabor_left, 2= gabor_right), contrast level)
+
+        (3, 0, 0, 1): all_trials[:1],
+        (3, 0, 0, 2): all_trials[1:2],
+        (3, 0, 0, 3): all_trials[2:3],
+        (3, 0, 0, 4): all_trials[3:4],
+        (3, 0, 0, 5): all_trials[4:5],
+        (3, 0, 0, 6): all_trials[5:6],
+        (3, 0, 0, 7): all_trials[6:7],
+
+        (3, 0, 1, 1): all_trials[7:8],
+        (3, 0, 1, 2): all_trials[8:9],
+        (3, 0, 1, 3): all_trials[9:10],
+        (3, 0, 1, 4): all_trials[10:11],
+        (3, 0, 1, 5): all_trials[11:12],
+
+        (3, 1, 0, 1): all_trials[12:13],
+        (3, 1, 0, 2): all_trials[13:14],
+        (3, 1, 0, 3): all_trials[14:15],
+        (3, 1, 0, 4): all_trials[15:16],
+        (3, 1, 0, 5): all_trials[16:17],
+        (3, 1, 0, 6): all_trials[17:18],
+        (3, 1, 0, 7): all_trials[18:19],
+
+        (3, 1, 1, 1): all_trials[19:20],
+        (3, 1, 1, 2): all_trials[20:21],
+        (3, 1, 1, 3): all_trials[21:22],
+        (3, 1, 1, 4): all_trials[22:23],
+        (3, 1, 1, 5): all_trials[23:24],
+
+        (3, 0, 2, 1): all_trials[24:25],
+        (3, 0, 2, 2): all_trials[25:26],
+        (3, 0, 2, 3): all_trials[26:27],
+        (3, 0, 2, 4): all_trials[27:28],
+        (3, 0, 2, 5): all_trials[28:29],
+
+        (3, 1, 2, 1): all_trials[29:30],
+        (3, 1, 2, 2): all_trials[30:31],
+        (3, 1, 2, 3): all_trials[31:32],
+        (3, 1, 2, 4): all_trials[32:33],
+        (3, 1, 2, 5): all_trials[33:]
+
+    }
+
+    return trial_params
+
+
+def block_2(window, filename, discs, gabor_transparency=0.5):
+    TILT_ANGLE = 10
+
+    blank = discs[0]
+
+    gabor_transparencies = [(gabor_transparency - 0.1 + 0.05*x)
+                            for x in range(5)]
+
+    gabors_right = [visual.GratingStim(window,
+                                       tex='sin',
+                                       mask='gauss',
+                                       sf=5,
+                                       name='gabor',
+                                       size=[8, 8],
+                                       ori=10,
+                                       autoLog=False,
+                                       opacity=contrast)
+                    for contrast in gabor_transparencies]
+
+    gabors_left = [visual.GratingStim(window,
+                                      tex='sin',
+                                      mask='gauss',
+                                      sf=5,
+                                      name='gabor',
+                                      size=[8, 8],
+                                      ori=-10,
+                                      autoLog=False,
+                                      opacity=contrast)
+                   for contrast in gabor_transparencies]
+
+    questions = ["Did you see something? (Press Left for No, Right for Yes)",
+                 "Gabor or disc? (1 for Gabor, 2 for Disc)"]
+
+    trial_params = block_2_trials()
+
+    for trial_num in range(34):
+        press_to_continue(window)
+
+        logging.warn("BLOCK 2, TRIAL {}".format(trial_num+1))
+        logging.flush()
+
+        param = find_param(trial_num, trial_params)
+        generate_log_message(param)
+
+        result = [55 + trial_num, 3, "", "", "", "", "", param[1] + 1,
+                  param[2]]
+        # log stimulus contrast
+        if param[2] == 0:
+            logging.warn("Contrast of disc is {}"
+                         .format(discs[param[3]].opacity))
+        else:
+            logging.warn("Contrast of gabor is {}"
+                         .format(gabors_right[param[3]-1].opacity))
+        logging.flush()
+
+        stimulus_param = [None, None]
+        stimulus = None
+
+        if param[2] == 0:
+            stimulus = discs[param[3]]
+        if param[2] == 1:
+            stimulus = gabors_left[param[3] - 1]
+        if param[2] == 2:
+            stimulus = gabors_right[param[3] - 1]
+
+        result += [stimulus.opacity, "", "", ""]
+        stimulus_param[param[1]] = stimulus
+        stimulus_param[1 - param[1]] = blank
+
+        logging.warn(stimulus_param)
+        logging.flush()
+
+        response = trial(window, *(stimulus_param + questions), block3=True)
+
+        result += list(response)
+
+        with open(filename, 'ab') as f:
+            wr = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
+            wr.writerow(result)
+
+        logging.warn(response)
+        logging.flush()
+
+        logging.warn("\n\n\n")
+        logging.flush()
+
+
 def create_log_files(subject_number, round_number):
     filename = ""
     if "src" in os.getcwd():
@@ -311,10 +495,13 @@ def create_log_files(subject_number, round_number):
         subheader_2 = ["Trial Number", "Condition",
                        "Disc position", "Contrast",
                        "First Gabor Tilt", "Second Gabor Tilt", "Contrast",
-                       "Stimulus Position", "Stimulus", "Contrast",
+                       "Stimulus Position",
+                       "Stimulus (0= disc, 1/2 = gabor left/right)",
+                       "Contrast",
                        "Tilt 1 (1=right)", "Tilt 2 (1=right)",
                                            "Confident trial",
-                       "Stimulus 1 seen", "Stimulus 2 seen", "Gabor or Disc?"]
+                       "Stimulus 1 seen", "Stimulus 2 seen",
+                       "Gabor or Disc?(0= disc, 1= gabor, 2=unseen)"]
 
         wr.writerow(header)
         wr.writerow(subheader_1)
@@ -331,8 +518,16 @@ def main(trial):
 
     filename = create_log_files(subject_number, round_number)
 
-    gabor_transparency = block_1(window, filename)
-    # block_2(window, filename)
+    CONTRASTS = [0, 0.01, 0.17, 0.33, 0.49, 0.65, 0.81, 0.97]  # disc contrasts
+
+    discs = [visual.Circle(win=window,
+                           radius=2.6,
+                           fillColor='white',
+                           lineWidth=0,
+                           opacity=contrast) for contrast in CONTRASTS]
+
+    gabor_transparency = block_1(window, filename, discs)
+    block_2(window, filename, discs, gabor_transparency)
 
 if __name__ == '__main__':
     main()

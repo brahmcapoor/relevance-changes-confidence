@@ -1,6 +1,6 @@
 from psychopy import gui, visual
 from experiment_objects import Trial
-import new_testing
+import testing
 import os
 import shutil
 
@@ -47,7 +47,7 @@ def main():
 
     trial = Trial(window, subject_number, round_number)
 
-    new_testing.main(trial)
+    testing.main(trial)
 
 if __name__ == '__main__':
     main()
