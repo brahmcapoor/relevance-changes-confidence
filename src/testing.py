@@ -201,7 +201,7 @@ def block_1_trials():
         (1, 1, 4): all_trials[10:11],
         (1, 1, 5): all_trials[11:12],
         (1, 1, 6): all_trials[12:13],
-        (1, 1, 6): all_trials[13:14],
+        (1, 1, 7): all_trials[13:14],
 
         # condition 2
         # format: (condition number, first orientation, second orientation)
@@ -219,19 +219,32 @@ def block_1(window, filename, discs):
 
     # Declaring the constants.
     TILT_ANGlE = 10  # for the gabor
-    gabor_contrast = 0.5
+    first_interval_contrast = 0.5
+    second_interval_contrast = 0.5
 
     blank = discs[0]
 
-    gabors = [visual.GratingStim(window,
-                                 tex='sin',
-                                 mask='gauss',
-                                 sf=5,
-                                 name='gabor',
-                                 size=[8, 8],
-                                 ori=TILT_ANGlE * i,
-                                 autoLog=False,
-                                 opacity=gabor_contrast) for i in [-1, 1]]
+    gabors_first = [visual.GratingStim(window,
+                                       tex='sin',
+                                       mask='gauss',
+                                       sf=5,
+                                       name='gabor',
+                                       size=[8, 8],
+                                       ori=TILT_ANGlE * i,
+                                       autoLog=False,
+                                       opacity=first_interval_contrast)
+                    for i in [-1, 1]]
+
+    gabors_second = [visual.GratingStim(window,
+                                        tex='sin',
+                                        mask='gauss',
+                                        sf=5,
+                                        name='gabor',
+                                        size=[8, 8],
+                                        ori=TILT_ANGlE * i,
+                                        autoLog=False,
+                                        opacity=second_interval_contrast)
+                     for i in [-1, 1]]
 
     questions = ["Left or Right?",
                  "Which one were you more confident about?"]
@@ -240,7 +253,8 @@ def block_1(window, filename, discs):
 
     stimulus_param = [None, None]
 
-    last_one_correct = False
+    last_one_correct_first = False
+    last_one_correct_second = False
 
     n_correct = 0
     n_counted = 0
@@ -280,14 +294,15 @@ def block_1(window, filename, discs):
         else:
             # condition 2
             result.append(2)
-            first_gabor = gabors[param[1]]
-            second_gabor = gabors[param[2]]
-            first_gabor.opacity = gabor_contrast
-            second_gabor.opacity = gabor_contrast
+            first_gabor = gabors_first[param[1]]
+            second_gabor = gabors_second[param[2]]
+            first_gabor.opacity = first_interval_contrast
+            second_gabor.opacity = second_interval_contrast
             stimulus_param = [first_gabor, second_gabor]
 
             result += ["", ""]
-            result += [first_gabor.ori, second_gabor.ori, gabor_contrast]
+            result += [first_gabor.ori, second_gabor.ori,
+                       first_interval_contrast, second_interval_contrast]
             result += ["", "", ""]
 
         response = trial(window, *(stimulus_param + questions))
@@ -307,24 +322,77 @@ def block_1(window, filename, discs):
                 logging.warn("CORRECT TRIAL")
                 logging.flush()
 
-                if last_one_correct:
-                    logging.warn("Two successive correct trials")
-                    logging.flush()
-                    gabor_contrast -= 0.02
-                    if gabor_contrast < 0.02:
-                        gabor_contrast = 0.02
-                        logging.warn("Minimum contrast for Gabor reached")
+                if confident_trial == 0:
+                    if last_one_correct_first:
+                        logging.warn("Two successive correct trials for the \
+                                     first condition")
                         logging.flush()
-                    logging.warn("Gabor contrast is now {}"
-                                 .format(gabor_contrast))
+                        first_interval_contrast -= 0.02
+                        if first_interval_contrast < 0.02:
+                            first_interval_contrast = 0.02
+                            logging.warn("Minimum contrast for Gabor 1 \
+                                         reached")
+                            logging.flush()
+                        logging.warn("First Gabor contrast is now {}"
+                                     .format(first_interval_contrast))
+                        logging.flush()
 
-                last_one_correct = not last_one_correct
+                    last_one_correct_first = not last_one_correct_first
+
+                elif confident_trial == 1:
+                    if last_one_correct_second:
+                        logging.warn("Two successive correct trials for the \
+                                     second condition")
+                        logging.flush()
+                        second_interval_contrast -= 0.02
+                        if second_interval_contrast < 0.02:
+                            second_interval_contrast = 0.02
+                            logging.warn("Minimum contrast for Gabor 2 \
+                                         reached")
+                            logging.flush()
+                        logging.warn("Second Gabor contrast is now {}"
+                                     .format(second_interval_contrast))
+                        logging.flush()
+
+                    last_one_correct_second = not last_one_correct_second
+
+            else:
+                # Incorrect response
+                logging.warn("Incorrect trial")
+                logging.flush()
+                if confident_trial == 0:
+                    logging.warn("Increasing first interval contrast")
+                    logging.flush()
+                    first_interval_contrast += 0.02
+                    if first_interval_contrast > 1:
+                        first_interval_contrast = 1
+                        logging.warn("Maximum contrast for first interval \
+                                     reached")
+                        logging.flush()
+                    logging.warn("First interval contrast is now {}"
+                                 .format(first_interval_contrast))
+                    logging.flush()
+                    last_one_correct_first = False
+
+                elif confident_trial == 1:
+                    logging.warn("Increasing second interval contrast")
+                    logging.flush()
+                    second_interval_contrast += 0.02
+                    if second_interval_contrast > 1:
+                        second_interval_contrast = 1
+                        logging.warn("Maximum contrast for second interval \
+                                     reached")
+                        logging.flush()
+                    logging.warn("Second interval contrast is now {}"
+                                 .format(second_interval_contrast))
+                    logging.flush()
+                    last_one_correct_second = False
 
         trial_record = [trial_num] + list(param) + list(response)
 
         logging.warn("\n\n\n")
 
-    return gabor_transparency
+    return (first_interval_contrast, second_interval_contrast)
 
 
 def block_2_trials():
@@ -382,35 +450,35 @@ def block_2_trials():
     return trial_params
 
 
-def block_2(window, filename, discs, gabor_transparency=0.5):
+def block_2(window, filename, discs, first_interval_contrast=0.5,
+            second_interval_contrast=0.5):
     TILT_ANGLE = 10
 
     blank = discs[0]
 
-    gabor_transparencies = [(gabor_transparency - 0.1 + 0.05*x)
-                            for x in range(5)]
+    gabor_first_transparencies = [(first_interval_contrast - 0.1 + 0.05*x)
+                                  for x in range(5)]
 
-    gabors_right = [visual.GratingStim(window,
-                                       tex='sin',
-                                       mask='gauss',
-                                       sf=5,
-                                       name='gabor',
-                                       size=[8, 8],
-                                       ori=10,
-                                       autoLog=False,
-                                       opacity=contrast)
-                    for contrast in gabor_transparencies]
+    gabor_second_transparencies = [(second_interval_contrast - 0.1 + 0.05*x)
+                                   for x in range(5)]
 
-    gabors_left = [visual.GratingStim(window,
-                                      tex='sin',
-                                      mask='gauss',
-                                      sf=5,
-                                      name='gabor',
-                                      size=[8, 8],
-                                      ori=-10,
-                                      autoLog=False,
-                                      opacity=contrast)
-                   for contrast in gabor_transparencies]
+    gabor_right = visual.GratingStim(window,
+                                     tex='sin',
+                                     mask='gauss',
+                                     sf=5,
+                                     name='gabor',
+                                     size=[8, 8],
+                                     ori=10,
+                                     autoLog=False)
+
+    gabor_left = visual.GratingStim(window,
+                                    tex='sin',
+                                    mask='gauss',
+                                    sf=5,
+                                    name='gabor',
+                                    size=[8, 8],
+                                    ori=-10,
+                                    autoLog=False)
 
     questions = ["Did you see something? (Press Left for No, Right for Yes)",
                  "Gabor or disc? (1 for Gabor, 2 for Disc)"]
@@ -418,6 +486,7 @@ def block_2(window, filename, discs, gabor_transparency=0.5):
     trial_params = block_2_trials()
 
     for trial_num in range(34):
+        # TODO: Improve logging
         press_to_continue(window)
 
         logging.warn("BLOCK 2, TRIAL {}".format(trial_num+1))
@@ -442,10 +511,21 @@ def block_2(window, filename, discs, gabor_transparency=0.5):
 
         if param[2] == 0:
             stimulus = discs[param[3]]
+
         if param[2] == 1:
-            stimulus = gabors_left[param[3] - 1]
+            stimulus = gabor_left
+            if param[1] == 0:
+                stimulus.opacity = gabor_first_transparencies[param[3] - 1]
+            else:
+                stimulus.opacity = gabor_second_transparencies[param[3] - 1]
+
         if param[2] == 2:
-            stimulus = gabors_right[param[3] - 1]
+            stimulus = gabor_right
+            stimulus = gabor_left
+            if param[1] == 0:
+                stimulus.opacity = gabor_first_transparencies[param[3] - 1]
+            else:
+                stimulus.opacity = gabor_second_transparencies[param[3] - 1]
 
         result += [stimulus.opacity, "", "", ""]
         stimulus_param[param[1]] = stimulus
@@ -475,26 +555,27 @@ def create_log_files(subject_number, round_number):
         filename = "../subject_logs/subject_{}_round_{}.csv" \
             .format(subject_number, round_number)
     else:
-        filename = "subject_logs/subject_{}.csv_round_{}" \
+        filename = "subject_logs/subject_{}_round_{}.csv" \
             .format(subject_number, round_number)
 
     with open(filename, 'wb') as f:
         wr = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
 
         header = ["", "", "Trial Parameters",
-                  "", "", "", "", "", "", "",
+                  "", "", "", "", "", "", "", "",
                   "Subject Response"]
 
         subheader_1 = ["", "",
                        "Condition 1", "",
-                       "Condition 2", "", "",
+                       "Condition 2", "", "", "",
                        "Condition 3", "", "",
                        "Block 1", "", "",
                        "Block 2"]
 
         subheader_2 = ["Trial Number", "Condition",
                        "Disc position", "Contrast",
-                       "First Gabor Tilt", "Second Gabor Tilt", "Contrast",
+                       "First Gabor Tilt", "Second Gabor Tilt",
+                       "First Gabor Contrast", "Second Gabor Contrast",
                        "Stimulus Position",
                        "Stimulus (0= disc, 1/2 = gabor left/right)",
                        "Contrast",
@@ -526,8 +607,11 @@ def main(trial):
                            lineWidth=0,
                            opacity=contrast) for contrast in CONTRASTS]
 
-    gabor_transparency = block_1(window, filename, discs)
-    block_2(window, filename, discs, gabor_transparency)
+    first_interval_contrast, second_interval_contrast = block_1(window,
+                                                                filename,
+                                                                discs)
+    block_2(window, filename, discs, first_interval_contrast,
+            second_interval_contrast)
 
 if __name__ == '__main__':
     main()
