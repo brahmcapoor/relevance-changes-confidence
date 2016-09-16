@@ -9,8 +9,6 @@ def generate_log_message(param):
     """
     Generates the log message for a specific trial, given the paramter tuple
     """
-    logging.warn("Parameter: {}".format(param))
-    logging.flush()
     condition = param[0]
     first_stim = ""
     second_stim = ""
@@ -60,10 +58,10 @@ def generate_log_message(param):
     logging.flush()
 
 
-def press_to_continue(window):
+def press_to_continue(window, message):
 
     prompt = visual.TextStim(window,
-                             text="Press space to continue",
+                             text=message,
                              alignHoriz='center',
                              alignVert='center')
 
@@ -260,7 +258,7 @@ def block_1(window, filename, discs):
     n_counted = 0
 
     for trial_num in range(54):
-        press_to_continue(window)
+        press_to_continue(window, "Press space to continue")
 
         result = [trial_num + 1]
 
@@ -269,6 +267,7 @@ def block_1(window, filename, discs):
                 show_feedback(window, (n_correct/n_counted)*100)
                 n_counted = 0
                 n_correct = 0
+                press_to_continue(window, "Press space to continue")
             except ZeroDivisionError:
                 pass
 
@@ -486,8 +485,7 @@ def block_2(window, filename, discs, first_interval_contrast=0.5,
     trial_params = block_2_trials()
 
     for trial_num in range(34):
-        # TODO: Improve logging
-        press_to_continue(window)
+        press_to_continue(window, "Press space to continue")
 
         logging.warn("BLOCK 2, TRIAL {}".format(trial_num+1))
         logging.flush()
@@ -495,22 +493,16 @@ def block_2(window, filename, discs, first_interval_contrast=0.5,
         param = find_param(trial_num, trial_params)
         generate_log_message(param)
 
-        result = [55 + trial_num, 3, "", "", "", "", "", param[1] + 1,
+        result = [55 + trial_num, 3, "", "", "", "", "", "", param[1] + 1,
                   param[2]]
-        # log stimulus contrast
-        if param[2] == 0:
-            logging.warn("Contrast of disc is {}"
-                         .format(discs[param[3]].opacity))
-        else:
-            logging.warn("Contrast of gabor is {}"
-                         .format(gabors_right[param[3]-1].opacity))
-        logging.flush()
 
         stimulus_param = [None, None]
         stimulus = None
 
         if param[2] == 0:
             stimulus = discs[param[3]]
+            logging.warn("Disc contrast is {}".format(stimulus.opacity))
+            logging.flush()
 
         if param[2] == 1:
             stimulus = gabor_left
@@ -518,21 +510,21 @@ def block_2(window, filename, discs, first_interval_contrast=0.5,
                 stimulus.opacity = gabor_first_transparencies[param[3] - 1]
             else:
                 stimulus.opacity = gabor_second_transparencies[param[3] - 1]
+            logging.warn("Gabor contrast is {}".format(stimulus.opacity))
+            logging.flush()
 
         if param[2] == 2:
             stimulus = gabor_right
-            stimulus = gabor_left
             if param[1] == 0:
                 stimulus.opacity = gabor_first_transparencies[param[3] - 1]
             else:
                 stimulus.opacity = gabor_second_transparencies[param[3] - 1]
+            logging.warn("Gabor contrast is {}".format(stimulus.opacity))
+            logging.flush()
 
         result += [stimulus.opacity, "", "", ""]
         stimulus_param[param[1]] = stimulus
         stimulus_param[1 - param[1]] = blank
-
-        logging.warn(stimulus_param)
-        logging.flush()
 
         response = trial(window, *(stimulus_param + questions), block3=True)
 
@@ -541,9 +533,6 @@ def block_2(window, filename, discs, first_interval_contrast=0.5,
         with open(filename, 'ab') as f:
             wr = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
             wr.writerow(result)
-
-        logging.warn(response)
-        logging.flush()
 
         logging.warn("\n\n\n")
         logging.flush()
@@ -582,7 +571,7 @@ def create_log_files(subject_number, round_number):
                        "Tilt 1 (1=right)", "Tilt 2 (1=right)",
                                            "Confident trial",
                        "Stimulus 1 seen", "Stimulus 2 seen",
-                       "Gabor or Disc?(0= disc, 1= gabor, 2=unseen)"]
+                       "Gabor or Disc?(0 = gabor, 1 = disc, 2=unseen)"]
 
         wr.writerow(header)
         wr.writerow(subheader_1)
@@ -610,6 +599,8 @@ def main(trial):
     first_interval_contrast, second_interval_contrast = block_1(window,
                                                                 filename,
                                                                 discs)
+    press_to_continue(window, "End of section.")
+    
     block_2(window, filename, discs, first_interval_contrast,
             second_interval_contrast)
 
