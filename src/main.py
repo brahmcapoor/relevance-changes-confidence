@@ -3,6 +3,7 @@ from experiment_objects import Trial
 import testing
 import os
 import shutil
+import practice
 
 
 def get_subject_info():
@@ -47,6 +48,7 @@ def main():
 
     trial = Trial(window, subject_number, round_number)
 
+    #practice.main(trial)
     testing.main(trial)
 
 if __name__ == '__main__':
